@@ -1,0 +1,22 @@
+# Поломка 3 из 3. Deployment с несуществующим образом
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calc-app
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: calc-app
+  template:
+    metadata:
+      labels:
+        app: calc-app
+    spec:
+      containers:
+        - name: calc-app
+          image: calc-app:v3            # <-- ?
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000

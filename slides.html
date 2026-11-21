@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Kubernetes. Блок 2 — Конфигурация и доступ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1e1e2e; color: #e6e6f0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+  .slide {
+    display: none; height: 100vh; padding: 4vh 6vw;
+    flex-direction: column; justify-content: center;
+  }
+  .slide.active { display: flex; }
+  h1 { font-size: 2.9rem; color: #89b4fa; margin-bottom: 1.6rem; }
+  h2 { font-size: 1.85rem; color: #89b4fa; margin-bottom: 1.1rem; }
+  p, li { font-size: 1.22rem; line-height: 1.48; }
+  ul { padding-left: 2rem; margin: 0.6rem 0; }
+  li { margin-bottom: 0.35rem; }
+  code, .code {
+    font-family: "SF Mono", Menlo, monospace;
+    background: #313244; color: #a6e3a1;
+    padding: 0.1em 0.4em; border-radius: 6px; font-size: 0.85em;
+  }
+  pre {
+    font-family: "SF Mono", Menlo, monospace;
+    background: #11111b; color: #a6e3a1; font-size: 0.98rem;
+    padding: 0.9rem 1.2rem; border-radius: 10px; margin: 0.7rem 0;
+    overflow-x: auto; line-height: 1.4;
+  }
+  pre .c { color: #6c7086; }
+  pre .k { color: #cba6f7; }
+  .hl { color: #f9e2af; font-weight: 600; }
+  .bad { color: #f38ba8; }
+  .ok { color: #a6e3a1; }
+  .note { color: #a6adc8; font-size: 1rem; margin-top: 0.9rem; }
+  table { border-collapse: collapse; margin: 0.7rem 0; }
+  th, td { border: 1px solid #45475a; padding: 0.4rem 0.9rem; font-size: 1rem; text-align: left; }
+  th { background: #313244; color: #89b4fa; }
+
+  /* ----- схемы ----- */
+  .flow { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0; flex-wrap: wrap; }
+  .box {
+    background: #313244; border: 2px solid #89b4fa; border-radius: 10px;
+    padding: 0.6rem 1rem; font-size: 1.02rem; text-align: center; line-height: 1.3;
+  }
+  .box small { font-size: 0.82rem; color: #a6adc8; }
+  .box.green { border-color: #a6e3a1; }
+  .box.yellow { border-color: #f9e2af; }
+  .box.red { border-color: #f38ba8; }
+  .box.purple { border-color: #cba6f7; }
+  .arrow { color: #89b4fa; font-size: 1.5rem; }
+  .cluster {
+    border: 2px dashed #585b70; border-radius: 14px;
+    padding: 0.8rem 1.2rem; margin: 0.7rem 0; position: relative;
+  }
+  .cluster::before {
+    content: "кластер"; position: absolute; top: -0.8rem; left: 1rem;
+    background: #1e1e2e; padding: 0 0.5rem; color: #a6adc8; font-size: 0.9rem;
+  }
+  .cluster.hostzone::before { content: "хост-машина (ноутбук)"; }
+  #counter { position: fixed; bottom: 2vh; right: 3vw; color: #6c7086; font-size: 1rem; }
+  #hint { position: fixed; bottom: 2vh; left: 3vw; color: #45475a; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+
+<section class="slide">
+  <h1>Kubernetes. Блок 2</h1>
+  <p>Конфигурация и доступ: ConfigMap, Secret, Service, Ingress</p>
+  <p class="note">Предусловие: блок 1 (Pod, Deployment, Service, kubectl)</p>
+</section>
+
+<section class="slide">
+  <h2>Мост из блока 1</h2>
+  <p>Что уже умеем:</p>
+  <div class="flow">
+    <div class="box small">Deployment<br><small>сколько копий</small></div><span class="arrow">→</span>
+    <div class="box small">Pod<br><small>где крутится</small></div><span class="arrow">→</span>
+    <div class="box small">Service<br><small>стабильный вход</small></div>
+  </div>
+  <p>Чего не хватает для жизни:</p>
+  <ul>
+    <li>настройки зашиты в образ — dev и prod требуют разных</li>
+    <li>паролей в кластере у нас нет безопасного места</li>
+    <li>наружу приложение торчит через порт вида <code>:31234</code></li>
+  </ul>
+  <p class="note">Этим и займёмся: ConfigMap, Secret, типы Service, Ingress.</p>
+</section>
+
+<section class="slide">
+  <h2>Проблема: конфигурация внутри образа</h2>
+  <pre><span class="c"># Так делали в блоке 1 (условно):</span>
+APP_NAME = "calc-dev"
+CALC_PRECISION = 2</pre>
+  <p>Один и тот же образ должен работать везде:</p>
+  <div class="flow">
+    <div class="box small">dev<br><small>отладка, precision 4</small></div>
+    <div class="box small">stage<br><small>почти бой</small></div>
+    <div class="box small">prod<br><small>бой, precision 2</small></div>
+  </div>
+  <p>Если конфиг в образе — под каждое окружение <span class="bad">своя сборка</span>.
+  А пересобранный «тот же» образ может оказаться не тем, что тестировали.</p>
+  <p class="note">Вспомните Artifactory: промоутим биты, а не пересобираем. Здесь тот же принцип.</p>
+</section>
+
+<section class="slide">
+  <h2>Правило: код и конфигурация — раздельно</h2>
+  <div class="flow">
+    <div class="box green">Образ<br><small>код, неизменный</small></div>
+    <span class="arrow">+</span>
+    <div class="box yellow">Конфигурация окружения<br><small>ConfigMap / Secret</small></div>
+    <span class="arrow">=</span>
+    <div class="box">Работающее приложение</div>
+  </div>
+  <ul>
+    <li>один образ — много окружений</li>
+    <li>настройки меняются без пересборки</li>
+    <li>пароли не лежат в коде и не плывут по git</li>
+  </ul>
+  <p class="note">Это принцип 5 из «12-factor app» — отраслевого свода правил.</p>
+</section>
+
+<section class="slide">
+  <h2>ConfigMap: что это</h2>
+  <p>Объект кластера: пары ключ-значение (строки) для <b>несекретных</b> настроек.</p>
+  <div class="cluster">
+    <div class="flow" style="margin:0">
+      <div class="box yellow">ConfigMap<br><code>calc-config</code><br><small>APP_NAME=calc-prod<br>CALC_PRECISION=4</small></div>
+      <span class="arrow">→</span>
+      <div class="box">Pod<br><small>приложение читает настройки</small></div>
+    </div>
+  </div>
+  <pre>kubectl create configmap calc-config \
+  --from-literal=APP_NAME=calc-prod -n demo</pre>
+</section>
+
+<section class="slide">
+  <h2>Три способа подключить ConfigMap к поду</h2>
+  <table>
+    <tr><th>Способ</th><th>Как выглядит</th><th>Когда удобен</th></tr>
+    <tr><td><code>env</code> + configMapKeyRef</td><td>один ключ → одна переменная</td><td>нужны 1–2 параметра</td></tr>
+    <tr><td><code>envFrom</code></td><td>все ключи → переменные окружения</td><td>много параметров сразу</td></tr>
+    <tr><td><code>volume</code></td><td>ключи → файлы в каталоге</td><td>конфиг-файл целиком (nginx.conf, app.conf)</td></tr>
+  </table>
+  <div class="flow">
+    <div class="box small yellow">ConfigMap</div><span class="arrow">→</span>
+    <div class="box small">env: переменная</div>
+    <div class="box small">файл: /etc/calc/app.conf</div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Подвох: обновление конфигурации</h2>
+  <table>
+    <tr><th></th><th>env / envFrom</th><th>volume (файл)</th></tr>
+    <tr><td>Правка ConfigMap</td><td class="bad">поды не видят</td><td class="ok">файл обновляется сам</td></tr>
+    <tr><td>Нужно</td><td><code>rollout restart</code></td><td>ничего (задержка до ~1 мин)</td></tr>
+    <tr><td>Почему</td><td>переменные задаются при старте процесса</td><td>kubelet синхронизирует том</td></tr>
+  </table>
+  <p class="note">В задании 1 сами увидите: поменяли ConfigMap — а /config старый.
+  До restart.</p>
+</section>
+
+<section class="slide">
+  <h2>Границы ConfigMap</h2>
+  <ul>
+    <li>до <b>1 МиБ</b> — это не файловое хранилище</li>
+    <li>только строки; <span class="bad">не для паролей</span> — для них Secret</li>
+    <li>живёт в namespace — из другого namespace не виден</li>
+    <li>имя ключа станет именем переменной/файла — выбирайте осмысленно</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Secret: пароли в кластере</h2>
+  <p>Тот же формат, но для чувствительного:</p>
+  <pre>kubectl create secret generic db-credentials \
+  --from-literal=username=calc_user \
+  --from-literal=password=s3cret-pass -n demo</pre>
+  <div class="cluster">
+    <div class="flow" style="margin:0">
+      <div class="box purple">Secret<br><code>db-credentials</code></div>
+      <span class="arrow">→</span>
+      <div class="box">Pod<br><small>env: DB_USER, DB_PASSWORD</small></div>
+    </div>
+  </div>
+  <p>Подключение — как у ConfigMap: <code>secretKeyRef</code> или том.</p>
+</section>
+
+<section class="slide">
+  <h2>base64 — это НЕ шифрование</h2>
+  <pre>kubectl get secret db-credentials -o yaml
+<span class="c"># data:</span>
+<span class="c">#   password: czNjcmV0LXBhc3M=</span>
+
+echo "czNjcmV0LXBhc3M=" | base64 -d
+<span class="c"># s3cret-pass  ← читается любым без ключа</span></pre>
+  <ul>
+    <li>base64 — <b>кодировка</b>: обратима за секунду</li>
+    <li>магия «шифрования» тут отсутствует — запомните это раз и навсегда</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Чем Secret реально защищён</h2>
+  <div class="flow">
+    <div class="box small">kubectl describe<br><small>значения скрыты</small></div>
+    <div class="box small">RBAC<br><small>кто может читать секреты</small></div>
+    <div class="box small">etcd encryption<br><small>если включено админом</small></div>
+  </div>
+  <ul>
+    <li>но: <code>kubectl get secret -o yaml</code> тому, у кого есть доступ,
+    покажет всё — <span class="hl">доступ к API = доступ к секретам</span></li>
+    <li>поэтому манифесты с секретами <span class="bad">не коммитим в git</span>;
+    в бою — Vault, Sealed Secrets, облачные хранилища</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>ConfigMap vs Secret</h2>
+  <table>
+    <tr><th></th><th>ConfigMap</th><th>Secret</th></tr>
+    <tr><td>Назначение</td><td>настройки</td><td>пароли, токены, ключи</td></tr>
+    <tr><td>Формат в yaml</td><td>открытый текст</td><td>base64</td></tr>
+    <tr><td>Шифрование</td><td>нет</td><td>тоже нет (по умолчанию)</td></tr>
+    <tr><td>Разница</td><td colspan="2">права доступа (RBAC) и обращение в кластере</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Service: зачем стабильная точка входа</h2>
+  <p>Под пересоздался → сменился IP. А обращаться надо по постоянному адресу.</p>
+  <div class="cluster">
+    <div class="flow" style="margin:0">
+      <div class="box green">Service<br><code>calc-service</code><br><small>IP постоянный</small></div>
+      <span class="arrow">→</span>
+      <div class="box small">Pod <small>10.1.0.7</small></div>
+      <div class="box small red">Pod <small>10.1.0.8 ✕ умер</small></div>
+      <div class="box small">Pod <small>10.1.0.9 новый</small></div>
+    </div>
+  </div>
+  <p>Service находит «свои» поды по <span class="hl">selector (labels)</span> —
+  состав может меняться, точка входа остаётся.</p>
+</section>
+
+<section class="slide">
+  <h2>Как Service выбирает поды</h2>
+  <div class="flow">
+    <div class="box green">Service<br><small>selector: app=calc-app</small></div>
+    <span class="arrow">⇄</span>
+    <div class="box small">Pod<br><small>labels: app=calc-app ✓</small></div>
+    <div class="box small red">Pod<br><small>labels: app=other ✗</small></div>
+  </div>
+  <ul>
+    <li>совпал label → под в списке endpoints сервиса</li>
+    <li>опечатка в label → сервис «пустой», запросы в никуда</li>
+    <li>проверка: <code>kubectl describe svc</code> → Endpoints</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>ClusterIP: только внутри</h2>
+  <div class="cluster">
+    <div class="flow" style="margin:0">
+      <div class="box small">web-pod</div><span class="arrow">→</span>
+      <div class="box green">Service db<br><small>ClusterIP 10.108.x.x</small></div><span class="arrow">→</span>
+      <div class="box small">db-pod</div>
+    </div>
+  </div>
+  <p class="flow"><span class="box small red">ноутбук</span><span class="arrow">✗</span><span>снаружи недоступен</span></p>
+  <ul>
+    <li>тип по умолчанию; стабильный виртуальный IP внутри кластера</li>
+    <li>для баз данных, очередей, внутренних API — <b>всегда он</b></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>NodePort: порт на каждом узле</h2>
+  <div class="flow">
+    <div class="box small">ноутбук</div><span class="arrow">→</span>
+    <div class="box">узел :31234</div><span class="arrow">→</span>
+    <div class="box green small">Service :80</div><span class="arrow">→</span>
+    <div class="box small">Pod :5000</div>
+  </div>
+  <ul>
+    <li>кластер открывает порт <b>30000–32767</b> на всех узлах сразу</li>
+    <li>для отладки и учебных стендов; в проде так не ходят</li>
+    <li>в minikube: <code>minikube service calc-service -n demo --url</code></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>LoadBalancer: облачный балансировщик</h2>
+  <div class="flow">
+    <div class="box small">интернет</div><span class="arrow">→</span>
+    <div class="box purple">балансировщик облака<br><small>публичный IP</small></div><span class="arrow">→</span>
+    <div class="box green small">Service</div><span class="arrow">→</span>
+    <div class="box small">Pod</div>
+  </div>
+  <ul>
+    <li>в облаке (AWS/YC/GCP) тип LoadBalancer <b>заказывает настоящий
+    балансировщик</b> с публичным адресом</li>
+    <li>в minikube его нет (эмулируется <code>minikube tunnel</code>)</li>
+  </ul>
+  <p class="note">Заметьте: NodePort и LoadBalancer строятся НАД ClusterIP — он есть всегда.</p>
+</section>
+
+<section class="slide">
+  <h2>Нюанс minikube на macOS</h2>
+  <ul>
+    <li>с docker-драйвером узел живёт в контейнере, его IP недоступен
+    напрямую с macOS</li>
+    <li>поэтому <code>minikube service --url</code> поднимает
+    <span class="hl">туннель</span> на <code>127.0.0.1</code> — терминал
+    с ним должен оставаться открытым</li>
+    <li>это не поломка, это особенность драйвера</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Ingress: человеческий адрес</h2>
+  <p>Проблема: <code>192.168.49.2:31234</code> — не адрес для людей.
+  А приложений много, и портов 30000+ на всех не хватит.</p>
+  <div class="flow">
+    <div class="box purple">Ingress-контроллер<br><small>nginx внутри кластера</small></div>
+    <span class="arrow">+</span>
+    <div class="box yellow">Ingress-правила<br><small>calc.local → calc-service:80</small></div>
+  </div>
+  <p>Контроллер — обратный прокси; Ingress (объект) — его конфигурация.</p>
+</section>
+
+<section class="slide">
+  <h2>Полный путь запроса</h2>
+  <div class="flow">
+    <div class="box small">браузер<br><code>calc.local</code></div><span class="arrow">→</span>
+    <div class="box small">/etc/hosts<br><small>calc.local → IP minikube</small></div><span class="arrow">→</span>
+    <div class="box purple small">ingress-контроллер<br><small>смотрит Host</small></div><span class="arrow">→</span>
+    <div class="box green small">calc-service</div><span class="arrow">→</span>
+    <div class="box small">Pod</div>
+  </div>
+  <ul>
+    <li>сервис за Ingress остаётся <b>ClusterIP</b> — NodePort не нужен</li>
+    <li>в жизни вместо /etc/hosts — настоящий DNS</li>
+    <li>один контроллер обслуживает много приложений и хостов</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Один Ingress — много приложений</h2>
+  <div class="cluster">
+    <div class="flow" style="margin:0; justify-content:center">
+      <div class="box purple small">ingress-контроллер</div>
+    </div>
+    <div class="flow" style="margin:0; justify-content:center">
+      <div class="box small">calc.local → calc-service</div>
+      <div class="box small">web.local → web-service</div>
+      <div class="box small">api.local → api-service</div>
+    </div>
+  </div>
+  <p>Маршрутизация по <b>имени хоста</b> (Host-заголовок) или по пути
+  (<code>/api</code> → один сервис, <code>/</code> → другой).
+  Челлендж задания 6 — именно про это.</p>
+</section>
+
+<section class="slide">
+  <h2>Большая картина блока 2</h2>
+  <div class="flow">
+    <div class="box small green">Образ<br><small>код</small></div><span class="arrow">+</span>
+    <div class="box small yellow">ConfigMap<br><small>настройки</small></div>
+    <div class="box small purple">Secret<br><small>пароли</small></div>
+  </div>
+  <div class="flow">
+    <span class="arrow">⬇</span>
+  </div>
+  <div class="flow">
+    <div class="box small">Deployment</div><span class="arrow">→</span>
+    <div class="box small">Pod</div><span class="arrow">→</span>
+    <div class="box small green">Service</div><span class="arrow">→</span>
+    <div class="box small purple">Ingress</div><span class="arrow">→</span>
+    <div class="box small">пользователь</div>
+  </div>
+  <p class="note">Если можете пройти по этой схеме и объяснить каждую стрелку — блок усвоен.</p>
+</section>
+
+<section class="slide">
+  <h2>Карта заданий</h2>
+  <table>
+    <tr><th>№</th><th>Задание</th><th>Что докажете</th></tr>
+    <tr><td>1</td><td>ConfigMap → env</td><td>конфиг без пересборки образа</td></tr>
+    <tr><td>2</td><td>ConfigMap → файл</td><td>горячее обновление без restart</td></tr>
+    <tr><td>3</td><td>Secret</td><td>пароль в кластере, base64 ≠ шифрование</td></tr>
+    <tr><td>4</td><td>ClusterIP vs NodePort</td><td>кто где доступен</td></tr>
+    <tr><td>5</td><td>Ingress</td><td>calc.local отвечает</td></tr>
+    <tr><td>6</td><td>разбор + челлендж</td><td>второе приложение через тот же Ingress</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Типовые ошибки блока</h2>
+  <table>
+    <tr><th>Симптом</th><th>Причина</th></tr>
+    <tr><td>/config не изменился</td><td>env не обновляется — нужен rollout restart</td></tr>
+    <tr><td>сервис «пустой»</td><td>selector ≠ labels подов</td></tr>
+    <tr><td>secret not found</td><td>создан в другом namespace</td></tr>
+    <tr><td>404 от ingress</td><td>имя/порт сервиса в правиле не совпали</td></tr>
+    <tr><td>Could not resolve calc.local</td><td>нет строки в /etc/hosts</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Итоги</h2>
+  <ul>
+    <li>образ неизменен, конфигурация — снаружи: ConfigMap и Secret</li>
+    <li>env — при старте пода; файл — обновляется сам</li>
+    <li>base64 — кодировка, а не защита; защита Secret — в RBAC</li>
+    <li>ClusterIP внутри, NodePort для отладки, Ingress — для людей</li>
+    <li>путь запроса вы теперь можете нарисовать по памяти</li>
+  </ul>
+  <p class="note">Вопросы?</p>
+</section>
+
+<div id="counter"></div>
+<div id="hint">← → — навигация</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+  const counter = document.getElementById('counter');
+  function show(i) {
+    cur = Math.max(0, Math.min(i, slides.length - 1));
+    slides.forEach((s, n) => s.classList.toggle('active', n === cur));
+    counter.textContent = (cur + 1) + ' / ' + slides.length;
+    location.hash = cur;
+  }
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) show(cur + 1);
+    if (['ArrowLeft', 'PageUp'].includes(e.key)) show(cur - 1);
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length - 1);
+  });
+  document.addEventListener('click', () => show(cur + 1));
+  show(parseInt(location.hash.slice(1)) || 0);
+</script>
+</body>
+</html>

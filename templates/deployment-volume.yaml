@@ -1,0 +1,43 @@
+# ============================================================
+# Шаблон к заданию 2. Deployment — ConfigMap примонтирован файлом
+# ------------------------------------------------------------
+# volumes + volumeMounts: том из ConfigMap → каталог в контейнере.
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: calc-app
+  namespace: demo
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: calc-app
+  template:
+    metadata:
+      labels:
+        app: calc-app
+    spec:
+      containers:
+        - name: calc-app
+          image: calc-app:v2
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            # Куда внутри контейнера смонтировать том:
+            - name: config-volume
+              mountPath: <ВПИШИТЕ путь в контейнере>   # /etc/calc
+      volumes:
+        # Сам том: источник — ConfigMap
+        - name: config-volume
+          configMap:
+            name: <ВПИШИТЕ имя configmap>   # calc-file-config
+
+# ------------------------------------------------------------
+#   kubectl apply -f deployment-volume.yaml
+#   kubectl exec -it deployment/calc-app -n demo -- cat /etc/calc/app.conf
+# ------------------------------------------------------------

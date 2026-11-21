@@ -1,0 +1,44 @@
+# ============================================================
+# Шаблон к заданию 1. Deployment v2 — приложение + ConfigMap
+# ------------------------------------------------------------
+# Шаг 1: заполните пропуски и задеплойте БЕЗ envFrom (умолчания).
+# Шаг 3: раскомментируйте блок envFrom и примените снова.
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: <ВПИШИТЕ имя deployment>        # calc-app
+  namespace: <ВПИШИТЕ namespace>        # demo
+
+spec:
+  replicas: <ВПИШИТЕ число копий>       # 2 достаточно
+  selector:
+    matchLabels:
+      app: <ВПИШИТЕ label>              # calc-app
+  template:
+    metadata:
+      labels:
+        app: <ВПИШИТЕ label>            # тот же, что выше
+    spec:
+      containers:
+        - name: calc-app
+          image: <ВПИШИТЕ образ:тег>     # calc-app:v2
+          imagePullPolicy: <ВПИШИТЕ политику>   # локальный образ → ?
+          ports:
+            - containerPort: <ВПИШИТЕ порт>     # 5000
+
+          # ---------- ШАГ 3: раскомментируйте ----------------
+          # envFrom подключает ВСЕ ключи ConfigMap как переменные
+          # окружения контейнера:
+          # envFrom:
+          #   - configMapRef:
+          #       name: <ВПИШИТЕ имя configmap>   # calc-config
+
+# ------------------------------------------------------------
+#   kubectl apply -f deployment-v2.yaml
+#   kubectl rollout status deployment/calc-app -n demo
+#   kubectl port-forward deployment/calc-app 5000:5000 -n demo &
+#   curl http://localhost:5000/config
+# ------------------------------------------------------------

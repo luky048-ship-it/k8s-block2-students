@@ -1,0 +1,13 @@
+# Поломка 2 из 3. Service с опечаткой в selector
+apiVersion: v1
+kind: Service
+metadata:
+  name: calc-service
+  namespace: demo
+spec:
+  type: ClusterIP
+  selector:
+    app: calc-ap                        # <-- ?
+  ports:
+    - port: 80
+      targetPort: 5000
