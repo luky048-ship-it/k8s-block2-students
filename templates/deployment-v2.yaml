@@ -4,37 +4,34 @@
 # Шаг 1: заполните пропуски и задеплойте БЕЗ envFrom (умолчания).
 # Шаг 3: раскомментируйте блок envFrom и примените снова.
 # ============================================================
-
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
-  name: <ВПИШИТЕ имя deployment>        # calc-app
-  namespace: <ВПИШИТЕ namespace>        # demo
-
+  name: calc-app # calc-app
+  namespace: demo # demo
 spec:
-  replicas: <ВПИШИТЕ число копий>       # 2 достаточно
+  replicas: 2
   selector:
     matchLabels:
-      app: <ВПИШИТЕ label>              # calc-app
+      app: calc-app
   template:
     metadata:
       labels:
-        app: <ВПИШИТЕ label>            # тот же, что выше
+        app: calc-app
     spec:
       containers:
         - name: calc-app
-          image: <ВПИШИТЕ образ:тег>     # calc-app:v2
-          imagePullPolicy: <ВПИШИТЕ политику>   # локальный образ → ?
+          image: calc-app:v2
+          imagePullPolicy: Never # локальный образ → ?
           ports:
-            - containerPort: <ВПИШИТЕ порт>     # 5000
-
-          # ---------- ШАГ 3: раскомментируйте ----------------
-          # envFrom подключает ВСЕ ключи ConfigMap как переменные
+            - containerPort: 5000 # 5000
+              # ---------- ШАГ 3: раскомментируйте ----------------
+              # envFrom подключает ВСЕ ключи ConfigMap как переменные
           # окружения контейнера:
-          # envFrom:
-          #   - configMapRef:
-          #       name: <ВПИШИТЕ имя configmap>   # calc-config
+
+          envFrom:
+            - configMapRef:
+                name: calc-config # calc-config
 
 # ------------------------------------------------------------
 #   kubectl apply -f deployment-v2.yaml

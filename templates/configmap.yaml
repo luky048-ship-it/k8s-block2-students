@@ -4,18 +4,15 @@
 # ConfigMap = пары ключ-значение в кластере. Приложение читает их
 # как переменные окружения — образ остаётся тем же.
 # ============================================================
-
-apiVersion: v1          # ConfigMap — в базовой API-группе
+apiVersion: v1 # ConfigMap — в базовой API-группе
 kind: ConfigMap
-
 metadata:
-  name: <ВПИШИТЕ имя configmap>        # договоримся: calc-config
-  namespace: <ВПИШИТЕ namespace>       # demo
-
+  name: calc-config # договоримся: calc-config
+  namespace: demo # demo
 data:
   # ВНИМАНИЕ: значения в ConfigMap — всегда строки (в кавычках).
-  APP_NAME: <ВПИШИТЕ "calc-prod">
-  CALC_PRECISION: <ВПИШИТЕ "4">        # сколько знаков после запятой
+  APP_NAME: "calc-prod"
+  CALC_PRECISION: "1" # сколько знаков после запятой
 
 # ------------------------------------------------------------
 # После заполнения:

@@ -3,14 +3,11 @@
 # ------------------------------------------------------------
 # В data можно положить не только пары ключ-значение, но и файл.
 # ============================================================
-
 apiVersion: v1
 kind: ConfigMap
-
 metadata:
-  name: <ВПИШИТЕ имя configmap>        # calc-file-config
-  namespace: <ВПИШИТЕ namespace>       # demo
-
+  name: calc-file-config # calc-file-config
+  namespace: demo # demo
 data:
   # Ключ — это имя будущего файла, значение — его содержимое.
   # Многострочный текст пишется через | (вертикальная черта) с отступом.
@@ -18,4 +15,4 @@ data:
     # Конфигурация калькулятора
     app_name = calc-file
     precision = 4
-    mode = production
+    mode = debug

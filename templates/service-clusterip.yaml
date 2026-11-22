@@ -2,21 +2,18 @@
 # Шаблон к заданию 4. Service — тип ClusterIP
 # ------------------------------------------------------------
 # ============================================================
-
 apiVersion: v1
 kind: Service
-
 metadata:
-  name: <ВПИШИТЕ имя service>          # calc-service
-  namespace: <ВПИШИТЕ namespace>       # demo
-
+  name: calc-service # calc-service
+  namespace: demo # demo
 spec:
-  type: <ВПИШИТЕ тип>                  # ClusterIP
+  type: ClusterIP # ClusterIP
   selector:
-    app: <ВПИШИТЕ label>               # как у подов: calc-app
+    app: calc-app # как у подов: calc-app
   ports:
-    - port: <ВПИШИТЕ порт сервиса>      # 80
-      targetPort: <ВПИШИТЕ порт контейнера>   # 5000
+    - port: 80 # 80
+      targetPort: 5000 # 5000
 
 # ------------------------------------------------------------
 #   kubectl apply -f service-clusterip.yaml

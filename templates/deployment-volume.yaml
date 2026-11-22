@@ -3,14 +3,11 @@
 # ------------------------------------------------------------
 # volumes + volumeMounts: том из ConfigMap → каталог в контейнере.
 # ============================================================
-
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: calc-app
   namespace: demo
-
 spec:
   replicas: 1
   selector:
@@ -30,12 +27,12 @@ spec:
           volumeMounts:
             # Куда внутри контейнера смонтировать том:
             - name: config-volume
-              mountPath: <ВПИШИТЕ путь в контейнере>   # /etc/calc
+              mountPath: /etc/calc # /etc/calc
       volumes:
         # Сам том: источник — ConfigMap
         - name: config-volume
           configMap:
-            name: <ВПИШИТЕ имя configmap>   # calc-file-config
+            name: calc-file-config # calc-file-config
 
 # ------------------------------------------------------------
 #   kubectl apply -f deployment-volume.yaml

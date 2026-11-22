@@ -4,27 +4,34 @@
 # Предусловие: minikube addons enable ingress (задание 0)
 # и Service calc-service типа ClusterIP (задание 4).
 # ============================================================
-
 apiVersion: networking.k8s.io/v1
 kind: Ingress
-
 metadata:
-  name: <ВПИШИТЕ имя ingress>          # calc-ingress
-  namespace: <ВПИШИТЕ namespace>       # demo
-
+  name: calc-ingress # calc-ingress
+  namespace: demo # demo
 spec:
   rules:
     # Все запросы к этому имени хоста пойдут по правилу ниже:
-    - host: <ВПИШИТЕ имя хоста>        # calc.local
+    - host: calc.local # calc.local
       http:
         paths:
-          - path: /                    # весь сайт
+          - path: / # весь сайт
             pathType: Prefix
             backend:
               service:
-                name: <ВПИШИТЕ имя service>      # calc-service
+                name: calc-service # calc-service
                 port:
-                  number: <ВПИШИТЕ порт сервиса> # 80
+                  number: 80 # 80
+    - host: web.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-service
+                port:
+                  number: 80
 
 # ------------------------------------------------------------
 #   kubectl apply -f ingress.yaml

@@ -1,0 +1,144 @@
+Name:             calc-app-5d8d847d59-wj7v2
+Namespace:        demo
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Sat, 21 Nov 2026 14:33:03 +0400
+Labels:           app=calc-app
+                  pod-template-hash=5d8d847d59
+Annotations:      kubectl.kubernetes.io/restartedAt: 2026-11-21T13:18:24+04:00
+Status:           Pending
+IP:               10.244.0.22
+IPs:
+  IP:           10.244.0.22
+Controlled By:  ReplicaSet/calc-app-5d8d847d59
+Containers:
+  calc-app:
+    Container ID:   
+    Image:          calc-app:v3
+    Image ID:       
+    Port:           5000/TCP
+    Host Port:      0/TCP
+    State:          Waiting
+      Reason:       ErrImageNeverPull
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-c777m (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-c777m:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+
+
+Name:             calc-app-68ddbfb884-57kxz
+Namespace:        demo
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Sat, 21 Nov 2026 13:42:59 +0400
+Labels:           app=calc-app
+                  pod-template-hash=68ddbfb884
+Annotations:      kubectl.kubernetes.io/restartedAt: 2026-11-21T13:18:24+04:00
+Status:           Running
+IP:               10.244.0.18
+IPs:
+  IP:           10.244.0.18
+Controlled By:  ReplicaSet/calc-app-68ddbfb884
+Containers:
+  calc-app:
+    Container ID:   containerd://04660b582f37510675f803fdde35fd5b42ac5d4e72d91d27d58cfb6a35ceca42
+    Image:          calc-app:v2
+    Image ID:       sha256:68346549b890c9466d416c0c9c1e2fba4b2b919232f8a746de471cae672eb770
+    Port:           5000/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Sat, 21 Nov 2026 13:43:00 +0400
+    Ready:          True
+    Restart Count:  0
+    Environment:
+      DB_USER:      <set to the key 'username' in secret 'db-credentials'>  Optional: false
+      DB_PASSWORD:  <set to the key 'password' in secret 'db-credentials'>  Optional: false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-w9ndj (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-w9ndj:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+
+
+Name:             web-nginx-65547bffff-2rffm
+Namespace:        demo
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Sat, 21 Nov 2026 14:24:04 +0400
+Labels:           app=web-nginx
+                  pod-template-hash=65547bffff
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.21
+IPs:
+  IP:           10.244.0.21
+Controlled By:  ReplicaSet/web-nginx-65547bffff
+Containers:
+  nginx:
+    Container ID:   containerd://d599c41f0409ba5a6bc93c0cd26170bdfe00cbfe143fea751b4e8a7a7256b944
+    Image:          nginx:alpine
+    Image ID:       docker.io/library/nginx@sha256:fb4658584bd9a916ffb6f6e365f97c25cfdb2923801f551ea08356e695f14ff7
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Sat, 21 Nov 2026 14:24:11 +0400
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-5sp8k (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-5sp8k:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s

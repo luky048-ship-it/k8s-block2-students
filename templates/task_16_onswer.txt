@@ -1,0 +1,40 @@
+Вы нашли все три спрятанные поломки с первой же попытки диагностики!
+Вот разбор каждой из них по вашему выводу, команды для починки и готовая таблица для отчёта:
+
+Три найденные поломки
+
+1. Ingress ведёт на несуществующий сервис (calc-svc вместо calc-service):
+	• В выводе kubectl describe ingress -n demo видно: / calc-svc:80 (<error: services "calc-svc" not found>).
+2. У сервиса calc-service опечатка в селекторе (app=calc-ap вместо app=calc-app):
+	• В выводе kubectl describe svc calc-service -n demo видно Selector: app=calc-ap и пустые Endpoints:, хотя у подов метка app=calc-app.
+3. В Deployment указан несуществующий образ calc-app:v3 (при imagePullPolicy: Never):
+	• В выводе kubectl get pods и kubectl describe pods новый под завис в статусе ErrImageNeverPull, так как локально собран только образ calc-app:v2.
+
+Как починить все три ошибки (прямо через kubectl или в файлах)
+
+Вы можете либо поправить файлы внутри templates/broken/ и заново выполнить kubectl apply -f templates/broken/, либо починить ресурсы прямо в кластере тремя командами:
+1. Починить Ingress (заменить имя сервиса calc-svc на calc-service):bash
+kubectl patch ingress calc-ingress -n demo --type='json' \
+  -p='[{"op": "replace", "path": "/spec/rules/0/http/paths/0/backend/service/name", "value":"calc-service"}]'
+Используйте код с осторожностью.
+2. Починить Service (вернуть selector app=calc-app):bash
+kubectl patch svc calc-service -n demo \
+  -p '{"spec":{"selector":{"app":"calc-app"}}}'
+Используйте код с осторожностью.
+3. Починить Deployment (вернуть существующий образ calc-app:v2):bash
+kubectl set image deployment/calc-app calc-app=calc-app:v2 -n demo
+kubectl rollout status deployment/calc-app -n demo
+Используйте код с осторожностью.
+4. Проверить итоговую работу:bash
+curl http://calc.local; echo
+Используйте код с осторожностью.
+
+Готовая таблица для сдачи отчёта (Задание 16)
+
+
+№	Поломка	Как нашли (команда-доказательство)	Как починили
+1	В правиле Ingress указано неверное имя сервиса calc-svc вместо calc-service	kubectl describe ingress -n demo — строка Backends: / calc-svc:80 (<error: services "calc-svc" not found>)	Заменили имя сервиса в правиле Ingress на calc-service (через kubectl patch / правку манифеста)
+2	В Service calc-service допущена опечатка в selector: app=calc-ap вместо app=calc-app	kubectl describe svc calc-service -n demo (Selector: app=calc-ap, Endpoints: пусто) и kubectl get pods -n demo --show-labels (app=calc-app)	Исправили spec.selector.app на calc-app, после чего появились Endpoints
+3	В Deployment calc-app указан несуществующий локальный образ calc-app:v3 вместо calc-app:v2	kubectl get pods -n demo (статус ErrImageNeverPull) и kubectl describe pods -n demo (Image: calc-app:v3)	Обновили тег образа контейнера на calc-app:v2 (kubectl set image deployment/calc-app calc-app=calc-app:v2 -n demo)
+
+Пришлите вывод curl после починки всех трёх ошибок или напишите, если остались ещё задания в этом блоке.
